@@ -17,17 +17,18 @@
 
 ## 🎯 ¿De dónde surge este proyecto?
 
-Este proyecto es una evolución del MVP original de **Viajes Azul SL**, en el que se sustituye la base de datos relacional SQLite por **MongoDB Atlas** — una base de datos NoSQL de documentos alojada en la nube.
+Este proyecto nace como **caso práctico de Transformación Digital** en la Universidad Europea de Madrid. La empresa ficticia **Viajes Azul SL** había detectado una oportunidad de mercado: sus clientes no querían un catálogo de viajes más, sino un sistema que les *ayudase a decidir*.
 
-La motivación técnica es clara: en una aplicación de viajes, los datos de un destino (paquetes, hoteles, valoraciones) siempre se acceden juntos. Con un modelo relacional eso implica múltiples tablas y JOINs. Con MongoDB, cada destino es un único documento que ya contiene todo lo necesario.
+Tras sesiones de **Design Thinking**, los insights fueron claros:
 
-| Decisión | SQLite (versión original) | MongoDB Atlas (esta versión) |
-|---|---|---|
-| Modelo | 5 tablas con claves foráneas | 1 colección con documentos embebidos |
-| Consultas | SQL + JOINs | Filtros pymongo (diccionario Python) |
-| Infraestructura | Fichero local `.db` | Base de datos en la nube, Free Tier |
-| Escalabilidad | Local / pequeño volumen | Multi-región, escala horizontal |
-| Setup | Sin configuración | URI de conexión en `.env` |
+| Lo que el usuario quiere | Lo que el sistema debe hacer |
+|---|---|
+| Simplicidad al elegir destino | Filtros intuitivos y búsqueda instantánea |
+| Soporte en la decisión | Chatbot que recomienda según perfil |
+| Maximizar coste/beneficio | Comparativa de paquetes y precios |
+| Compartir la experiencia | Sistema de valoraciones reales |
+
+La solución: un **recomendador web inteligente** con chatbot conversacional, construido siguiendo metodología Scrum en un Sprint de 2 semanas, usando **MongoDB Atlas** como base de datos documental en la nube.
 
 ---
 
