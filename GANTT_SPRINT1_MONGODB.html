@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gantt – Sprint 1 MVP · Viajes Azul SL · MongoDB Edition</title>
+  <style>
+    :root {
+      --col-task: 300px;
+      --col-resp: 110px;
+      --row-h:    38px;
+      --epic-h:   32px;
+
+      --c-purple:  #7c3aed;
+      --c-db:      #00684a;
+      --c-api:     #2563eb;
+      --c-chat:    #0891b2;
+      --c-front:   #ea580c;
+      --c-test:    #dc2626;
+      --c-done:    #16a34a;
+
+      --line:      #e2e8f0;
+      --bg-alt:    #f8fafc;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #f0f6ff;
+      padding: 32px;
+      min-width: 1180px;
+    }
+
+    /* ── Page header ─────────────────────────────────────────────────── */
+    .page-header {
+      background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #00684a 100%);
+      border-radius: 16px;
+      padding: 28px 36px;
+      color: #fff;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .ph-title { font-size: 1.55rem; font-weight: 800; letter-spacing: -.01em; }
+    .ph-sub   { font-size: .9rem; opacity: .8; margin-top: 4px; }
+    .ph-chips { display: flex; gap: 10px; flex-wrap: wrap; }
+    .chip {
+      background: rgba(255,255,255,.18);
+      border: 1px solid rgba(255,255,255,.3);
+      border-radius: 50px;
+      padding: 5px 14px;
+      font-size: .8rem;
+      font-weight: 600;
+    }
+    .chip-mongo {
+      background: rgba(0,237,100,.2);
+      border: 1px solid rgba(0,237,100,.5);
+      color: #00ed64;
+    }
+
+    /* ── Legend ──────────────────────────────────────────────────────── */
+    .legend {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+      background: #fff;
+      padding: 14px 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(30,58,138,.08);
+    }
+    .leg-item { display: flex; align-items: center; gap: 8px; font-size: .82rem; font-weight: 600; color: #374151; }
+    .leg-dot  { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; }
+
+    /* ── Gantt wrapper ────────────────────────────────────────────────── */
+    .gantt-wrap {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 4px 24px rgba(30,58,138,.12);
+      overflow: hidden;
+    }
+
+    /* ── Every row = flex: [task | responsible | bars] ──────────────── */
+    .g-row {
+      display: flex;
+      align-items: stretch;
+      border-bottom: 1px solid var(--line);
+      min-height: var(--row-h);
+    }
+    .g-row:last-child { border-bottom: none; }
+    .g-row:nth-child(even) .g-cell-task,
+    .g-row:nth-child(even) .g-cell-resp { background: var(--bg-alt); }
+
+    /* ── Cell: task name ─────────────────────────────────────────────── */
+    .g-cell-task {
+      width: var(--col-task);
+      flex-shrink: 0;
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      font-size: .82rem;
+      color: #1e293b;
+      border-right: 1px solid var(--line);
+      background: #fff;
+    }
+    .task-icon { margin-right: 6px; font-size: .95rem; }
+
+    /* ── Cell: responsible ───────────────────────────────────────────── */
+    .g-cell-resp {
+      width: var(--col-resp);
+      flex-shrink: 0;
+      padding: 0 10px;
+      display: flex;
+      align-items: center;
+      font-size: .75rem;
+      color: #64748b;
+      border-right: 1px solid var(--line);
+      background: #fff;
+    }
+
+    /* ── Cell: bars area ─────────────────────────────────────────────── */
+    .g-cell-bars {
+      flex: 1;
+      position: relative;
+      background-image: repeating-linear-gradient(
+        to right,
+        transparent 0%,
+        transparent calc(10% - 1px),
+        var(--line) calc(10% - 1px),
+        var(--line) 10%
+      );
+    }
+    .g-cell-bars::after {
+      content: '';
+      position: absolute;
+      top: 0; bottom: 0;
+      left: 50%;
+      width: 2px;
+      background: #94a3b8;
+      transform: translateX(-50%);
+      z-index: 1;
+    }
+
+    /* ── Bar ─────────────────────────────────────────────────────────── */
+    .bar {
+      position: absolute;
+      top: 7px;
+      height: calc(var(--row-h) - 14px);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      font-size: .72rem;
+      font-weight: 700;
+      color: rgba(255,255,255,.95);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      z-index: 2;
+      box-shadow: 0 2px 6px rgba(0,0,0,.15);
+    }
+    .bar-purple { background: var(--c-purple); }
+    .bar-db     { background: var(--c-db); }
+    .bar-api    { background: var(--c-api); }
+    .bar-chat   { background: var(--c-chat); }
+    .bar-front  { background: var(--c-front); }
+    .bar-test   { background: var(--c-test); }
+    .bar-done   { background: var(--c-done); }
+
+    /* ── Column header rows ──────────────────────────────────────────── */
+    .g-row-header {
+      display: flex;
+      background: #1e3a8a;
+      color: #fff;
+    }
+    .gh-task {
+      width: var(--col-task);
+      flex-shrink: 0;
+      padding: 10px 14px;
+      font-size: .8rem;
+      font-weight: 700;
+      border-right: 1px solid rgba(255,255,255,.15);
+      display: flex;
+      align-items: center;
+    }
+    .gh-resp {
+      width: var(--col-resp);
+      flex-shrink: 0;
+      padding: 10px 10px;
+      font-size: .8rem;
+      font-weight: 700;
+      border-right: 1px solid rgba(255,255,255,.15);
+      display: flex;
+      align-items: center;
+    }
+    .gh-bars {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .week-row {
+      display: flex;
+      border-bottom: 1px solid rgba(255,255,255,.15);
+    }
+    .week-cell {
+      width: 50%;
+      text-align: center;
+      padding: 5px 0;
+      font-size: .78rem;
+      font-weight: 700;
+      letter-spacing: .05em;
+    }
+    .week-cell:first-child { border-right: 2px solid rgba(255,255,255,.4); }
+    .day-row { display: flex; }
+    .day-cell {
+      width: 10%;
+      text-align: center;
+      padding: 5px 0;
+      font-size: .72rem;
+      border-right: 1px solid rgba(255,255,255,.1);
+      line-height: 1.3;
+    }
+    .day-cell:last-child { border-right: none; }
+    .day-cell .day-name { display: block; font-weight: 600; }
+    .day-cell .day-date { display: block; opacity: .7; font-size: .67rem; }
+
+    /* ── Epic section header ─────────────────────────────────────────── */
+    .g-row-epic {
+      display: flex;
+      background: #f1f5f9;
+      border-bottom: 1px solid var(--line);
+      min-height: var(--epic-h);
+    }
+    .epic-label {
+      width: calc(var(--col-task) + var(--col-resp));
+      flex-shrink: 0;
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      font-size: .78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      border-right: 1px solid var(--line);
+    }
+    .epic-bars { flex: 1; background: #f1f5f9; }
+    .epic-days {
+      position: relative;
+      height: 100%;
+      background-image: repeating-linear-gradient(
+        to right,
+        transparent 0%,
+        transparent calc(10% - 1px),
+        #d1d5db calc(10% - 1px),
+        #d1d5db 10%
+      );
+    }
+
+    /* ── Footer ─────────────────────────────────────────────────────── */
+    .page-footer {
+      margin-top: 20px;
+      text-align: center;
+      font-size: .78rem;
+      color: #94a3b8;
+    }
+
+    /* ── Milestone diamond ───────────────────────────────────────────── */
+    .milestone {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%) rotate(45deg);
+      width: 16px;
+      height: 16px;
+      background: var(--c-done);
+      border: 2px solid #fff;
+      z-index: 3;
+      box-shadow: 0 2px 6px rgba(0,0,0,.2);
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Page header ──────────────────────────────────────────────────────── -->
+<div class="page-header">
+  <div>
+    <div class="ph-title">✈️ Viajes Azul SL — Diagrama de Gantt</div>
+    <div class="ph-sub">Sprint 1 · MVP Recomendador de Viajes · MongoDB Edition · UEM Systems</div>
+  </div>
+  <div class="ph-chips">
+    <span class="chip">📅 05 – 16 Mayo 2025</span>
+    <span class="chip">⏱️ 2 semanas · 10 días</span>
+    <span class="chip">👥 4 roles</span>
+    <span class="chip">📦 22 tareas</span>
+    <span class="chip chip-mongo">● MongoDB Atlas</span>
+  </div>
+</div>
+
+<!-- ── Legend ───────────────────────────────────────────────────────────── -->
+<div class="legend">
+  <div class="leg-item"><div class="leg-dot" style="background:var(--c-purple)"></div>🎯 Setup &amp; Planificación</div>
+  <div class="leg-item"><div class="leg-dot" style="background:var(--c-db)"></div>● Base de Datos MongoDB</div>
+  <div class="leg-item"><div class="leg-dot" style="background:var(--c-api)"></div>⚙️ Backend API</div>
+  <div class="leg-item"><div class="leg-dot" style="background:var(--c-chat)"></div>🤖 Chatbot IA</div>
+  <div class="leg-item"><div class="leg-dot" style="background:var(--c-front)"></div>🎨 Frontend UI</div>
+  <div class="leg-item"><div class="leg-dot" style="background:var(--c-test)"></div>🧪 Testing</div>
+  <div class="leg-item"><div class="leg-dot" style="background:var(--c-done)"></div>✅ Entrega</div>
+</div>
+
+<!-- ── Gantt chart ──────────────────────────────────────────────────────── -->
+<div class="gantt-wrap">
+
+  <!-- Column headers -->
+  <div class="g-row-header">
+    <div class="gh-task">Tarea / Historia de Usuario</div>
+    <div class="gh-resp">Responsable</div>
+    <div class="gh-bars">
+      <div class="week-row">
+        <div class="week-cell">◀ &nbsp;SEMANA 1 &nbsp;▶</div>
+        <div class="week-cell">◀ &nbsp;SEMANA 2 &nbsp;▶</div>
+      </div>
+      <div class="day-row">
+        <div class="day-cell"><span class="day-name">Lun</span><span class="day-date">05/05</span></div>
+        <div class="day-cell"><span class="day-name">Mar</span><span class="day-date">06/05</span></div>
+        <div class="day-cell"><span class="day-name">Mié</span><span class="day-date">07/05</span></div>
+        <div class="day-cell"><span class="day-name">Jue</span><span class="day-date">08/05</span></div>
+        <div class="day-cell"><span class="day-name">Vie</span><span class="day-date">09/05</span></div>
+        <div class="day-cell"><span class="day-name">Lun</span><span class="day-date">12/05</span></div>
+        <div class="day-cell"><span class="day-name">Mar</span><span class="day-date">13/05</span></div>
+        <div class="day-cell"><span class="day-name">Mié</span><span class="day-date">14/05</span></div>
+        <div class="day-cell"><span class="day-name">Jue</span><span class="day-date">15/05</span></div>
+        <div class="day-cell"><span class="day-name">Vie</span><span class="day-date">16/05</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ÉPICA 1: SETUP ════════════════════════════════════════════════ -->
+  <div class="g-row-epic">
+    <div class="epic-label" style="color:var(--c-purple)">🎯 &nbsp;Épica 1 — Setup y Planificación</div>
+    <div class="epic-bars"><div class="epic-days"></div></div>
+  </div>
+
+  <div class="g-row">
+    <div class="g-cell-task"><span class="task-icon">📋</span>Sprint Planning &amp; Kickoff</div>
+    <div class="g-cell-resp">Equipo completo</div>
+    <div class="g-cell-bars">
+      <div class="bar bar-purple" style="left:0%;width:10%">Planning</div>
+    </div>
+  </div>
+
+  <div class="g-row">
+    <div class="g-cell-task"><span class="task-icon">🛠️</span>Configuración del entorno de desarrollo</div>
+    <div class="g-cell-resp">Dev Lead</div>
+    <div class="g-cell-bars">
+      <div class="bar bar-purple" style="left:0%;width:10%">Setup</div>
+    </div>
+  </div>
+
+  <!-- ═══ ÉPICA 2: BASE DE DATOS MONGODB ═══════════════════════════════ -->
+  <div class="g-row-epic">
+    <div class="epic-label" style="color:var(--c-db)">● &nbsp;Épica 2 — Base de Datos (MongoDB Atlas)</div>
+    <div class="epic-bars"><div class="epic-days"></div></div>
+  </div>
+
+  <div class="g-row">
+    <div class="g-cell-task"><span class="task-icon">📐</span>Diseño del modelo de documentos embebidos</div>
+    <div class="g-cell-resp">BD Dev</div>
+    <div class="g-cell-bars">
+      <div class="bar bar-db" style="left:0%;width:20%">Modelo Doc</div>
+    </div>
+  </div>
+
+  <div class="g-row">
+    <div class="g-cell-task"><span class="task-icon">☁️</span>Configuración Atlas (cluster + usuario + red)</div>
+    <div class="g-cell-resp">BD Dev</div>
+    <div class="g-cell-bars">
+      <div class="bar bar-db" style="left:10%;width:10%">Atlas Setup</div>
+    </div>
+  </div>
+
+  <div class="g-row">
+    <div class="g-cell-task"><span class="task-icon">🔌</span>Conexión pymongo + certifi (URI en .env)</div>
+    <div class="g-cell-resp">BD Dev</div>
+    <div class="g-cell-bars">
+      <div class="bar bar-db" style="left:10%;width:20%">pymongo TLS</div>
+    </div>
+  </div>
+
+  <div class="g-row">
+    <div class="g-cell-task"><span class="task-icon">🌱</span>Seed data: 15 documentos con arrays embebidos</div>
+    <div class="g-cell-resp">BD Dev</div>
+    <div class="g-cell-bars">
+      <div class="bar bar-db" style="left:20%;width:10%">Seed</div>
+    </div>
+  </div>
+
+  <!-- ═══ ÉPICA 3: BACKEND API ══════════════════════════════════════════ -->
+  <div class="g-row-epic">
+    <div class="epic-label" style="color:var(--c-api)">⚙️ &nbsp;Épica 3 — Backend API REST (Flask + pymongo)</div>
+    <div class="epic-bars"><div class="epic-days"></div></div>
+  </div>
+
+  <div class="g-row">
+    <div class="g-cell-task"><span class="task-icon">🏗️</span>Estructura Flask + cliente pymongo</div>
+    <div class="g-cell-resp">Backend Dev</div>
+    <div class="g-cell-bars">
+      <div class="bar bar-api" style="left:20%;width:20%">Flask setup</div>
+    </div>
+  </div>
+
+  <div class="g-row">
+    <div class="g-cell-task"><span class="task-icon">🔍</span>GET /api/destinos con filtro pymongo dinámico</div>
+    <div class="g-cell-resp">Backend Dev</div>
+    <div class="g-cell-bars">
+      <div class="bar bar-api" style="left:30%;width:10%">API</div>
+    </div>
+  </div>
+
+  <div class="g-row">
+    <div class="g-cell-task"><span class="task-icon">📦</span>GET /api/destinos/&lt;id&gt; (1 lectura, sin JOINs)</div>
+    <div class="g-cell-resp">Backend Dev</div>
+    <div class="g-cell-bars">
+      <div class="bar bar-api" style="left:30%;width:20%">Detalle API</div>
+    </div>
+  </div>
+
+  <div class="g-row">
+    <div class="g-cell-task"><span class="task-icon">⭐</span>POST /api/valoraciones ($push + $set atómico)</div>
+    <div class="g-cell-resp">Backend Dev</div>
+    <div class="g-cell-bars">
+      <div class="bar bar-api" style="left:40%;width:10%">API</div>
+    </div>
+  </div>
+
+  <!-- ═══ ÉPICA 4: CHATBOT ══════════════════════════════════════════════ -->
+  <div class="g-row-epic">
+    <div class="epic-label" style="color:var(--c-chat)">🤖 &nbsp;Épica 4 — Chatbot IA "Azul"</div>
+    <div class="epic-bars"><div class="epic-days"></div></div>
+  </div>
+
+  <div class="g-row">
+    <div class="g-cell-task"><span class="task-icon">🧠</span>Diseño del motor de intenciones</div>
+    <div class="g-cell-resp">IA Dev</div>
+    <div class="g-cell-bars">
+      <div class="bar bar-chat" style="left:50%;width:10%">Diseño</div>
+    </div>
+  </div>
+
+  <div class="g-row">
+    <div class="g-cell-task"><span class="task-icon">💬</span>Implementación 9 intenciones en español</div>
+    <div class="g-cell-resp">IA Dev</div>
+    <div class="g-cell-bars">
+      <div class="bar bar-chat" style="left:50%;width:20%">NLP intenciones</div>
+    </div>
+  </div>
+
+  <div class="g-row">
+    <div class="g-cell-task"><span class="task-icon">🔗</span>POST /api/chatbot + consultas pymongo ($regex)</div>
+    <div class="g-cell-resp">IA Dev</div>
+    <div class="g-cell-bars">
+      <div class="bar bar-chat" style="left:60%;width:10%">API</div>
+    </div>
+  </div>
+
+  <!-- ═══ ÉPICA 5: FRONTEND ═════════════════════════════════════════════ -->
+  <div class="g-row-epic">
+    <div class="epic-label" style="color:var(--c-front)">🎨 &nbsp;Épica 5 — Frontend UI (HTML + Tailwind + JS)</div>
+    <div class="epic-bars"><div class="epic-days"></div></div>
+  </div>
+
+  <div class="g-row">
+    <div class="g-cell-task"><span class="task-icon">🖼️</span>Hero, header, buscador + pills de tipo</div>
+    <div class="g-cell-resp">Frontend Dev</div>
+    <div class="g-cell-bars">
+      <div class="bar bar-front" style="left:50%;width:20%">Hero UI</div>
+    </div>
+  </div>
+
+  <div class="g-row">
+    <div class="g-cell-task"><span class="task-icon">🃏</span>Grid de tarjetas de destinos (lazy fetch)</div>
+    <div class="g-cell-resp">Frontend Dev</div>
+    <div class="g-cell-bars">
+      <div class="bar bar-front" style="left:60%;width:20%">Cards</div>
+    </div>
+  </div>
+
+  <div class="g-row">
+    <div class="g-cell-task"><span class="task-icon">🪟</span>Modal de detalle con 3 pestañas</div>
+    <div class="g-cell-resp">Frontend Dev</div>
+    <div class="g-cell-bars">
+      <div class="bar bar-front" style="left:70%;width:20%">Modal</div>
+    </div>
+  </div>
+
+  <div class="g-row">
+    <div class="g-cell-task"><span class="task-icon">💬</span>Widget chatbot UI (panel flotante)</div>
+    <div class="g-cell-resp">Frontend Dev</div>
+    <div class="g-cell-bars">
+      <div class="bar bar-front" style="left:70%;width:10%">Chat UI</div>
+    </div>
+  </div>
+
+  <div class="g-row">
+    <div class="g-cell-task"><span class="task-icon">🔎</span>Filtros sidebar + búsqueda en tiempo real</div>
+    <div class="g-cell-resp">Frontend Dev</div>
+    <div class="g-cell-bars">
+      <div class="bar bar-front" style="left:70%;width:20%">Filtros</div>
+    </div>
+  </div>
+
+  <!-- ═══ ÉPICA 6: TESTING ══════════════════════════════════════════════ -->
+  <div class="g-row-epic">
+    <div class="epic-label" style="color:var(--c-test)">🧪 &nbsp;Épica 6 — Testing y Corrección</div>
+    <div class="epic-bars"><div class="epic-days"></div></div>
+  </div>
+
+  <div class="g-row">
+    <div class="g-cell-task"><span class="task-icon">✅</span>Testing funcional end-to-end (5 flujos)</div>
+    <div class="g-cell-resp">QA / Equipo</div>
+    <div class="g-cell-bars">
+      <div class="bar bar-test" style="left:80%;width:20%">E2E Testing</div>
+    </div>
+  </div>
+
+  <div class="g-row">
+    <div class="g-cell-task"><span class="task-icon">🐛</span>Corrección de bugs y ajustes UI</div>
+    <div class="g-cell-resp">Dev Lead</div>
+    <div class="g-cell-bars">
+      <div class="bar bar-test" style="left:80%;width:20%">Bug fixing</div>
+    </div>
+  </div>
+
+  <!-- ═══ ÉPICA 7: ENTREGA ══════════════════════════════════════════════ -->
+  <div class="g-row-epic">
+    <div class="epic-label" style="color:var(--c-done)">✅ &nbsp;Épica 7 — Entrega del Sprint</div>
+    <div class="epic-bars"><div class="epic-days"></div></div>
+  </div>
+
+  <div class="g-row">
+    <div class="g-cell-task"><span class="task-icon">🎤</span>Sprint Review + Demo en vivo del MVP</div>
+    <div class="g-cell-resp">Equipo completo</div>
+    <div class="g-cell-bars">
+      <div class="milestone" style="left:calc(90% + 2px)"></div>
+      <div class="bar bar-done" style="left:90%;width:10%">Sprint Review</div>
+    </div>
+  </div>
+
+  <div class="g-row">
+    <div class="g-cell-task"><span class="task-icon">🔄</span>Retrospectiva + backlog Sprint 2</div>
+    <div class="g-cell-resp">Equipo completo</div>
+    <div class="g-cell-bars">
+      <div class="bar bar-done" style="left:90%;width:10%">Retro</div>
+    </div>
+  </div>
+
+</div><!-- /gantt-wrap -->
+
+<!-- ── Footer ──────────────────────────────────────────────────────────── -->
+<div class="page-footer">
+  <strong>Viajes Azul SL · Sprint 1 MVP · MongoDB Edition</strong> &nbsp;·&nbsp;
+  UEM Systems &nbsp;·&nbsp; Metodología Scrum &nbsp;·&nbsp;
+  Velocidad estimada: 22 tareas / 2 semanas &nbsp;·&nbsp;
+  Siguiente: Sprint 2 — LLM real &amp; perfil de usuario en Atlas
+</div>
+
+</body>
+</html>
