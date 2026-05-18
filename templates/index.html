@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Viajes Azul – Tu recomendador de viajes</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════ HEADER ═════════ -->
+<header class="site-header">
+  <div style="max-width:1280px;margin:0 auto;padding:0 24px;display:flex;align-items:center;height:64px;gap:24px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:1.6rem">✈️</span>
+      <span style="color:#fff;font-size:1.25rem;font-weight:800;letter-spacing:-.01em">Viajes<span style="color:#7dd3fc">Azul</span></span>
+    </div>
+    <nav style="display:flex;gap:20px;margin-left:auto">
+      <a href="#" style="color:rgba(255,255,255,.8);font-size:.9rem;font-weight:500;transition:color .2s"
+         onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.8)'">Destinos</a>
+      <a href="#" style="color:rgba(255,255,255,.8);font-size:.9rem;font-weight:500;transition:color .2s"
+         onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.8)'">Ofertas</a>
+      <a href="#" style="color:rgba(255,255,255,.8);font-size:.9rem;font-weight:500;transition:color .2s"
+         onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.8)'">Sobre nosotros</a>
+    </nav>
+    <button onclick="document.getElementById('chatbot-panel').classList.remove('hidden')"
+      style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.35);color:#fff;border-radius:50px;padding:7px 18px;font-size:.85rem;font-weight:600;cursor:pointer;">
+      💬 Asistente IA
+    </button>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════════════ HERO ══════════ -->
+<section class="hero">
+  <h1 class="hero-title">Descubre tu próximo destino</h1>
+  <p class="hero-subtitle">Más de 15 destinos cuidadosamente seleccionados para ti · Vuelo + hotel incluidos</p>
+
+  <div class="search-wrap">
+    <input id="search-input" type="text" placeholder="¿A dónde quieres viajar? Ej: Bali, playa, aventura...">
+    <button class="search-btn" id="search-btn">🔍 Buscar</button>
+  </div>
+
+  <div class="type-pills">
+    <button class="pill" data-tipo="">🌍 Todos</button>
+    <button class="pill" data-tipo="playa">🏖️ Playa</button>
+    <button class="pill" data-tipo="montaña">🏔️ Montaña</button>
+    <button class="pill" data-tipo="ciudad">🏛️ Ciudad</button>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ STATS ═════════ -->
+<div class="stats-bar">
+  <div class="stat-item">✈️ <strong id="stat-destinos">–</strong> destinos</div>
+  <div class="stat-item">📦 <strong id="stat-paquetes">–</strong> paquetes disponibles</div>
+  <div class="stat-item">⭐ <strong id="stat-valoraciones">–</strong> valoraciones de viajeros</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ MAIN ══════════ -->
+<div class="main-layout">
+
+  <!-- ── Sidebar filtros ──────────────────────────────────────────────── -->
+  <aside class="sidebar">
+    <h3>🎛️ Filtros</h3>
+
+    <div class="filter-group">
+      <label class="group-label">Tipo de destino</label>
+      <label class="filter-option"><input type="radio" name="tipo" value="playa"> 🏖️ Playa</label>
+      <label class="filter-option"><input type="radio" name="tipo" value="montaña"> 🏔️ Montaña</label>
+      <label class="filter-option"><input type="radio" name="tipo" value="ciudad"> 🏛️ Ciudad</label>
+    </div>
+
+    <div class="filter-group">
+      <label class="group-label">Presupuesto</label>
+      <label class="filter-option"><input type="radio" name="presupuesto" value="bajo"> 💚 Hasta 500€</label>
+      <label class="filter-option"><input type="radio" name="presupuesto" value="medio"> 💛 500€ – 1500€</label>
+      <label class="filter-option"><input type="radio" name="presupuesto" value="alto"> 🔴 Más de 1500€</label>
+    </div>
+
+    <div class="filter-group">
+      <label class="group-label">Continente</label>
+      <label class="filter-option"><input type="radio" name="continente" value="Europa"> 🇪🇺 Europa</label>
+      <label class="filter-option"><input type="radio" name="continente" value="Asia"> 🌏 Asia</label>
+      <label class="filter-option"><input type="radio" name="continente" value="América"> 🌎 América</label>
+    </div>
+
+    <button class="btn-reset" id="btn-reset">✕ Eliminar filtros</button>
+  </aside>
+
+  <!-- ── Grid destinos ────────────────────────────────────────────────── -->
+  <section>
+    <div class="grid-header">
+      <h2>Destinos recomendados</h2>
+      <span class="count-badge" id="count-badge">cargando...</span>
+    </div>
+    <div class="destinations-grid" id="destinations-grid">
+      <!-- populated by JS -->
+    </div>
+  </section>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ MODAL ═════════ -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-box">
+    <!-- Hero image -->
+    <div class="modal-hero">
+      <img id="modal-img" src="" alt="Destino">
+      <div class="modal-hero-overlay">
+        <div>
+          <h2 class="modal-hero-title" id="modal-title"></h2>
+          <p class="modal-hero-sub"  id="modal-country"></p>
+        </div>
+      </div>
+      <button class="modal-close" id="modal-close">✕</button>
+    </div>
+
+    <!-- Body -->
+    <div class="modal-body">
+      <p class="modal-desc" id="modal-desc"></p>
+
+      <!-- Meta chips -->
+      <div class="modal-meta">
+        <span class="meta-chip">🌡️ <span id="modal-clima"></span></span>
+        <span class="meta-chip">📅 <span id="modal-epoca"></span></span>
+        <span class="meta-chip">💶 <span id="modal-precio"></span></span>
+      </div>
+
+      <!-- Actividades -->
+      <div id="modal-actividades" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px"></div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="paquetes">📦 Paquetes</button>
+        <button class="tab-btn"        data-tab="hoteles">🏨 Hoteles</button>
+        <button class="tab-btn"        data-tab="valoraciones">⭐ Valoraciones</button>
+      </div>
+
+      <div id="panel-paquetes"    class="tab-panel active"></div>
+      <div id="panel-hoteles"     class="tab-panel"></div>
+      <div id="panel-valoraciones"class="tab-panel"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ CHATBOT ════════ -->
+<div class="chatbot-widget">
+  <!-- Panel -->
+  <div class="chatbot-panel hidden" id="chatbot-panel">
+    <div class="chatbot-header">
+      <div class="chatbot-avatar">✈️</div>
+      <div>
+        <div class="chatbot-name">Azul · Asistente IA</div>
+        <div class="chatbot-status">🟢 En línea · responde en segundos</div>
+      </div>
+      <button class="chatbot-close-btn" id="chatbot-close">✕</button>
+    </div>
+    <div class="chat-messages" id="chat-messages"></div>
+    <div class="chat-input-row">
+      <input id="chat-input" type="text" placeholder="Pregúntame cualquier cosa...">
+      <button class="chat-send-btn" id="chat-send">➤</button>
+    </div>
+  </div>
+
+  <!-- Toggle button -->
+  <button class="chatbot-toggle" id="chatbot-toggle" title="Abrir asistente de viajes">💬</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ FOOTER ════════ -->
+<footer class="site-footer">
+  <p style="margin:0 0 6px">
+    <strong>Viajes Azul SL</strong> · Recomendador inteligente de destinos
+  </p>
+  <p style="margin:0;font-size:.8rem;opacity:.6">
+    MVP v1.0 · Sprint 1 · UEM Systems · 2025 · Proyecto de Ingeniería
+  </p>
+</footer>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>
